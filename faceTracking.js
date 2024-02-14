@@ -1,3 +1,7 @@
+import mimetypes
+
+mimetypes.add_type('application/javascript', '.js')
+
 var cu = document.createElement("script");
 cu.src = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
 cu.crossOrigin = "anonymous";
