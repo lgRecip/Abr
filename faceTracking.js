@@ -164,8 +164,8 @@ const _loadSceneContent = async function(scene) {
         { size: 0.01, sideOrientation: BABYLON.VertexData.DOUBLESIDE },
         scene)
     };
-    const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("https://carolhmj.github.io/quick-demos/assets/textures/environments/meadows.env", scene);
-
+   // const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("https://carolhmj.github.io/quick-demos/assets/textures/environments/meadows.env", scene);
+const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("environment.env", scene);
    // const background = new BABYLON.Layer('BackgroundLayer', null, scene, true);
     // background.texture = webcam;
      //background.texture = envTex;
