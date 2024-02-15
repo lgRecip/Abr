@@ -122,10 +122,11 @@ const _loadSceneContent = async function(scene) {
         console.log(  webcam.video.currentTime);
         console.log( "NEW WEBCAM FRAME");
         // await facemesh.send({ image: webcam.video });
-        if (lastVideoTime !== webcam.video.currentTime) {
+        if (lastVideoTime !== webcam.video.currentTime) { 
           lastVideoTime = webcam.video.currentTime;
           results = faceLandmarker.detectForVideo(webcam.video, startTimeMs);
-          if (results.faceLandmarks) {
+         // if (results.faceLandmarks) {
+		  if ( results.faceBlendshapes[0] != undefined){
             newFacemeshUpdate (results)
          //   console.log( results.faceBlendshapes[0]);
            
