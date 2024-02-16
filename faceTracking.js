@@ -207,8 +207,8 @@ const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("environment.en
   
     const mat = new BABYLON.PBRMaterial("sphereMat", scene);
 
-    mat.metallic = 0.33;
-    mat.roughness = 0.12;
+    mat.metallic = 0.001;
+    mat.roughness = 0.1;
     const baseUrl = "https://carolhmj.github.io/quick-demos/assets/textures/materials/frosted-glass/"
     mat.albedoTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_basecolor.jpg`);
     mat.metallicTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_roughness.jpg`);
@@ -217,10 +217,11 @@ const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("environment.en
     mat.reflectionTexture = envTex;
     mat.refractionTexture = envTex;
     mat.linkRefractionWithTransparency = true;
-    mat.indexOfRefraction = 1.2;
-    mat.alpha = 0; // Fully refractive material
-
+    mat.indexOfRefraction = 1.1;
+    mat.alpha = 0.0; // Fully refractive material
+    mat.reflectionTexture.rotationY += 0.5;
     let v = 0;
+
     scene.onBeforeRenderObservable.add(() => {
         mat.albedoTexture.vOffset = v;
         mat.bumpTexture.vOffset = v;
@@ -409,8 +410,11 @@ const _update_mesh = function (
 
   mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, verts);
   xform.setAbsolutePosition(new BABYLON.Vector3(xcenter, ycenter, zcenter).scale(10));
-  ikController.position = new BABYLON.Vector3(avgX/5.0,(avgY/5.0)+2,0);
+ if(ikController != undefined && ikPole != undefined )
+  {
+    ikController.position = new BABYLON.Vector3(avgX/5.0,(avgY/5.0)+2,0);
   ikPole.position = new BABYLON.Vector3((avgX/5.0)+1,(avgY/5.0)+2,0);
+  }
   // ikController.setAbsolutePosition( new BABYLON.Vector3(xcenter, ycenter, zcenter).scale(10));
   // ikPole.setAbsolutePosition( new BABYLON.Vector3(xcenter *20, ycenter*10, zcenter*10));
   // ikController.position = new BABYLON.Vector3(xcenter/10, ycenter, zcenter/10);
