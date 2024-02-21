@@ -38,6 +38,7 @@ async function createFaceLandmarker() {
           delegate: "GPU"
       },
       outputFaceBlendshapes: true,
+	outputFacialTransformationMatrixes: true,
       runningMode,
       numFaces: 1,
       selfieMode: true,
