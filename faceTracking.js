@@ -238,7 +238,7 @@ const background = new BABYLON.Layer('BackgroundLayer', null, scene, true);
   
     const mat = new BABYLON.PBRMaterial("sphereMat", scene);
 
-    mat.metallic = 0.001;
+    mat.metallic = 0.75;
     mat.roughness = 0.1;
     const baseUrl = "https://carolhmj.github.io/quick-demos/assets/textures/materials/frosted-glass/"
    mat.albedoTexture = textureFond_seamless;
