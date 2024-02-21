@@ -9,11 +9,18 @@ fm.src = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js";
 fm.crossOrigin = "anonymous";
 document.head.appendChild(fm);
 
-
+let modAssetPath = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+// let wasmPath = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm";
+let wasmPath =  "./node_modules/@mediapipe/tasks-vision/wasm";
 let wormMesh;
+let wormMesh_idle;
 let skeleton;
 let ikPole;
 let ikController;
+let textureFond;
+let textureFond_seamless;
+let bim ;
+let frameBuffer;
 
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
@@ -49,6 +56,8 @@ createFaceLandmarker();
 const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas, true);
 
+let camera;
+
 const createScene = function () {
     const scene = new BABYLON.Scene(engine);
     scene.useRightHandedSystem = true;
@@ -66,8 +75,15 @@ const createScene = function () {
     
      camera.attachControl(canvas, true);
 
-    const light = new BABYLON.HemisphericLight("KeyLight", new BABYLON.Vector3(0, 1, 0), scene);
-    light.intensity = 0.7;
+
+	  bim = BABYLON.MeshBuilder.CreateBox('', { size: 1.1 }, scene);
+	bim.position = new BABYLON.Vector3(0, 1, 0);
+	bim.parent = wormMesh;
+  bim.addBehavior(new BABYLON.PointerDragBehavior());
+  bim.isVisible = false;
+
+  //  const light = new BABYLON.HemisphericLight("KeyLight", new BABYLON.Vector3(0, 1, 0), scene);
+   // light.intensity = 0.7;
 
     fm.onload = function() {
         _loadSceneContent(scene);
@@ -116,17 +132,24 @@ const _loadSceneContent = async function(scene) {
    
    
 
-    const facecamera = new mpCameraUtils.Camera(webcam.video, {
+   const facecamera = new mpCameraUtils.Camera(webcam.video, {
       onFrame: async () => {
         let startTimeMs = performance.now();
-        console.log(  webcam.video.currentTime);
-        console.log( "NEW WEBCAM FRAME");
+        // console.log(  webcam.video.currentTime);
+        // console.log( "NEW WEBCAM FRAME");
         // await facemesh.send({ image: webcam.video });
-        if (lastVideoTime !== webcam.video.currentTime) { 
+          // videoOption =  ImageProcessingOptions.Builder;
+          // videoOption.setRotationDegrees (90);
+        // videoOption.setRotationDegrees(90);
+
+        if (lastVideoTime !== webcam.video.currentTime &&  webcam.video.currentTime > 0.0 ) {
           lastVideoTime = webcam.video.currentTime;
+        //  console.log(webcam.video.width);
+        //  console.log(webcam.video.height);
           results = faceLandmarker.detectForVideo(webcam.video, startTimeMs);
-         // if (results.faceLandmarks) {
-		  if ( results.faceBlendshapes[0] != undefined){
+          // console.log(results.faceBlendshapes[0]);
+          // if (results.faceLandmarks ) {
+            if(results.faceBlendshapes[0]!=undefined){
             newFacemeshUpdate (results)
          //   console.log( results.faceBlendshapes[0]);
            
@@ -135,7 +158,7 @@ const _loadSceneContent = async function(scene) {
             var idx = -1;
              results.faceBlendshapes[0].categories.map((shape) => {
            
-              if(idx>=0 && idx<51)
+              if(wormMesh != undefined && idx>=0 && idx<51 && wormMesh.morphTargetManager != undefined)
          { 
           //  console.log(idx);
           // console.log(shape.score);
@@ -167,14 +190,21 @@ const _loadSceneContent = async function(scene) {
     };
    // const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("https://carolhmj.github.io/quick-demos/assets/textures/environments/meadows.env", scene);
 const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("environment.env", scene);
-   // const background = new BABYLON.Layer('BackgroundLayer', null, scene, true);
+ textureFond = new BABYLON.Texture("Fond.png");
+    textureFond_seamless = new BABYLON.Texture("Fond_seamless.png");
+	
+	// const background = new BABYLON.Layer('BackgroundLayer', null, scene, true);
     // background.texture = webcam;
      //background.texture = envTex;
      scene.environmentTexture = envTex;
-     const skybox = scene.createDefaultSkybox(envTex, true, 10000,0.1); 
+    // const skybox = scene.createDefaultSkybox(envTex, true, 10000,0.1); 
     // resize bg
     // _update_view_scaling(scene, background, webcam);
 
+const background = new BABYLON.Layer('BackgroundLayer', null, scene, true);
+   
+     background.texture = textureFond;
+	
     const material = new BABYLON.PBRMaterial('FaceMesh_PBR', scene);
     material.albedoColor = BABYLON.Color3.Magenta();
     material.reflectivityColor = BABYLON.Color3.Black();
@@ -210,16 +240,20 @@ const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("environment.en
     mat.metallic = 0.001;
     mat.roughness = 0.1;
     const baseUrl = "https://carolhmj.github.io/quick-demos/assets/textures/materials/frosted-glass/"
-    mat.albedoTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_basecolor.jpg`);
+   mat.albedoTexture = textureFond_seamless;
+	// mat.albedoTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_basecolor.jpg`);
     mat.metallicTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_roughness.jpg`);
     mat.bumpTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_normal.jpg`);
     mat.ambientTexture = new BABYLON.Texture(`${baseUrl}Glass_Frosted_001_ambientOcclusion.jpg`);
     mat.reflectionTexture = envTex;
+	mat.reflectionTexture.rotationY = 1.5;
     mat.refractionTexture = envTex;
     mat.linkRefractionWithTransparency = true;
     mat.indexOfRefraction = 1.1;
     mat.alpha = 0.0; // Fully refractive material
-    mat.reflectionTexture.rotationY += 0.5;
+    mat.bumpTexture.vScale = 2.0;
+    mat.bumpTexture.uScale = 2.0;
+	 mat.environmentIntensity = 4;
     let v = 0;
 
     scene.onBeforeRenderObservable.add(() => {
@@ -231,15 +265,22 @@ const envTex = new BABYLON.CubeTexture.CreateFromPrefilteredData("environment.en
         v -= 0.0005 * scene.getAnimationRatio();
     });
 
+	    BABYLON.SceneLoader.ImportMesh("","https://raw.githubusercontent.com/lgRecip/Abr/main/","abyssWorm_idle_3.glb", scene, function(newMeshes){
+      wormMesh_idle = newMeshes[1];
+      wormMesh_idle.material = mat;
+      // wormMesh.scaling = new BABYLON.Vector3(1000.0,1000.0,1000.0);
+      //   wormMesh.position = new BABYLON.Vector3(0.0,-1500.0,0.0);
+      wormMesh_idle.setEnabled(false);
+    });
 
-    BABYLON.SceneLoader.ImportMesh("","https://raw.githubusercontent.com/lgRecip/Abr/main/","abyssWorm_blend_skinned_inflated.glb", scene, function(newMeshes,particleSystems, skeletons){
+    BABYLON.SceneLoader.ImportMesh("","https://raw.githubusercontent.com/lgRecip/Abr/main/","abyssWorm_blend_skinned_inflated_withIdle.glb", scene, function(newMeshes,particleSystems, skeletons){
         wormMesh = newMeshes[1];
         wormMesh.material = mat;
         wormMesh.scaling = new BABYLON.Vector3(1000.0,1000.0,1000.0);
         wormMesh.position = new BABYLON.Vector3(0.0,-1500.0,0.0);
 		
     var target = null;
-    console.log( "GLB TARGETS");
+ //   console.log( "GLB TARGETS");
     const aniGr = scene.animationGroups
     scene.animationGroups.forEach((g) => {
         g.stop()
@@ -327,6 +368,26 @@ function UpdateMorphTargetByName(morphTargetManager, targetName, influence)
     target.influence = influence;
 }
 
+var animRotC = 0.0;
+var animRotB = 0.0;
+var animRotT = 0.0;
+var animRotN = 0.0;
+var animRot = 0.0;
+
+var c,b,t,n;
+
+let avgPos;
+let avgPosInit = false;
+let idAvg = 0;
+
+let startPos = new BABYLON.Vector3(0.0,-1500.0,0.0);
+let valPos0 = 0.0;
+let valPos1 = 0.0;
+
+let avgRotX,avgRotY,avgRotZ;
+let nAvgRot = 0;
+let avgRotInit = false;
+
 const _update_mesh = function (
   mesh,
   results,
@@ -334,87 +395,284 @@ const _update_mesh = function (
   ftime = 0,
   xform = null
 ) {
-  const verts = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-  if (!verts) return;
+  // const verts = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  // if (!verts) return;
 
-  const normals = mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind);
-  if (!normals) return;
+  // const normals = mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind);
+  // if (!normals) return;
 
-  // const landmarks = results.multiFaceLandmarks[0];
-  const landmarks = results.faceLandmarks[0];
-  if (!landmarks) return;
+  // // const landmarks = results.multiFaceLandmarks[0];
+  // const landmarks = results.faceLandmarks[0];
+  // if (!landmarks) return;
 
-  const scene = mesh.getScene();
-  if (!scene) return;
+  // const scene = mesh.getScene();
+  // if (!scene) return;
 
-  let idx = 0;
-  let minx = Number.MAX_SAFE_INTEGER;
-  let maxx = Number.MIN_SAFE_INTEGER;
-  let miny = Number.MAX_SAFE_INTEGER;
-  let maxy = Number.MIN_SAFE_INTEGER;
-  let minz = Number.MAX_SAFE_INTEGER;
-  let maxz = Number.MIN_SAFE_INTEGER;
+  // let idx = 0;
+  // let minx = Number.MAX_SAFE_INTEGER;
+  // let maxx = Number.MIN_SAFE_INTEGER;
+  // let miny = Number.MAX_SAFE_INTEGER;
+  // let maxy = Number.MIN_SAFE_INTEGER;
+  // let minz = Number.MAX_SAFE_INTEGER;
+  // let maxz = Number.MIN_SAFE_INTEGER;
 
-  console.log(landmarks[0]);
-  let avgX = 0.0; let avgY = 0.0; let avgZ = 0.0;
-  for (let i = 0; i < landmarks.length; i++) {
-    // let x = (landmarks[i].x - 0.5) * 10;
-    let x = ((1.0-landmarks[i].x) - 0.5) * 10;
-    let y = -(landmarks[i].y - 0.5) * 10;
-    // let z = ((1.0-landmarks[i].z) - 0.5) * 10;
-    let z = (landmarks[i].z - 0.5) * 10;
+  // // console.log(landmarks[0]);
+  // let avgX = 0.0; let avgY = 0.0; let avgZ = 0.0;
+  // for (let i = 0; i < landmarks.length; i++) {
+  //   // let x = (landmarks[i].x - 0.5) * 10;
+  //   let x = ((1.0-landmarks[i].x) - 0.5) * 10;
+  //   let y = -(landmarks[i].y - 0.5) * 10;
+  //   // let z = ((1.0-landmarks[i].z) - 0.5) * 10;
+  //   let z = (landmarks[i].z - 0.5) * 10;
 
-    verts[idx++] = x;
-    verts[idx++] = y;
-    verts[idx++] = z;
+  //   verts[idx++] = x;
+  //   verts[idx++] = y;
+  //   verts[idx++] = z;
 
-    if (tracks.map(t => t.faceidx).includes(i)) {
-      const track = tracks.find(t => t.faceidx === i);
+  //   if (tracks.map(t => t.faceidx).includes(i)) {
+  //     const track = tracks.find(t => t.faceidx === i);
 
-      if (track?.trkobj) {
-        const fx = track.filters[0].filter(x, (1 / track.freq) * ftime);
-        const fy = track.filters[1].filter(y, (1 / track.freq) * ftime);
-        const fz = track.filters[2].filter(z, (1 / track.freq) * ftime);
-        track.trkobj?.setAbsolutePosition(BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(fx, fy, fz), mesh._worldMatrix));
+  //     if (track?.trkobj) {
+  //       const fx = track.filters[0].filter(x, (1 / track.freq) * ftime);
+  //       const fy = track.filters[1].filter(y, (1 / track.freq) * ftime);
+  //       const fz = track.filters[2].filter(z, (1 / track.freq) * ftime);
+  //       track.trkobj?.setAbsolutePosition(BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(fx, fy, fz), mesh._worldMatrix));
 
-        // const c = BABYLON.Vector3.Forward();
-        // console.log (c);
-        //const c = scene.activeCamera?.getForwardRay().direction;// || BABYLON.Vector3.Forward();
-        const c = scene.activeCamera?.getForwardRay().direction || BABYLON.Vector3.Forward();
-        const t = new BABYLON.Vector3(-normals[track.faceidx + 1], normals[track.faceidx + 2], -normals[track.faceidx]);
-        const b = t.cross(c);
-        const n = b.cross(t).scale(-1);
-        track.trkobj.rotation = BABYLON.Vector3.RotationFromAxis(b, t, n);
-      }
-    }
 
-    if (x < minx) minx = x;
-    if (x > maxx) maxx = x;
-    if (y < miny) miny = y;
-    if (y > maxy) maxy = y;
-    if (z < minz) minz = z;
-    if (z > maxz) maxz = z;
 
-    avgX += x;
-    avgY += y;
-    avgZ += z;
-  }
+  //       // const c = BABYLON.Vector3.Forward();
+  //       // console.log (c);
+  //       //const c = scene.activeCamera?.getForwardRay().direction;// || BABYLON.Vector3.Forward();
+  //       // const c = scene.activeCamera?.getForwardRay().direction || BABYLON.Vector3.Forward();
+  //       // const t = new BABYLON.Vector3(-normals[track.faceidx + 1], normals[track.faceidx + 2], -normals[track.faceidx]);
+  //       // const b = t.cross(c);
+  //       // const n = b.cross(t).scale(-1);
+  //       c = scene.activeCamera?.getForwardRay().direction || BABYLON.Vector3.Forward();
+  //       t = new BABYLON.Vector3(-normals[track.faceidx + 1], normals[track.faceidx + 2], -normals[track.faceidx]);
+  //       b = t.cross(c);
+  //       n = b.cross(t).scale(-1);
+  //       track.trkobj.rotation = BABYLON.Vector3.RotationFromAxis(b, t, n);
+  //       //animRot = t;
+  //     }
+  //   }
 
-  avgX /= landmarks.length;
-  avgY /= landmarks.length;
-  avgZ /= landmarks.length;
+  //   if (x < minx) minx = x;
+  //   if (x > maxx) maxx = x;
+  //   if (y < miny) miny = y;
+  //   if (y > maxy) maxy = y;
+  //   if (z < minz) minz = z;
+  //   if (z > maxz) maxz = z;
 
-  let xcenter = minx + (maxx - minx) / 2;
-  let ycenter = miny + (maxy - miny) / 2;
-  let zcenter = minz + (maxz - minz) / 2;
+  //   avgX += x;
+  //   avgY += y;
+  //   avgZ += z;
+  // }
 
-  mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, verts);
-  xform.setAbsolutePosition(new BABYLON.Vector3(xcenter, ycenter, zcenter).scale(10));
+  // avgX /= landmarks.length;
+  // avgY /= landmarks.length;
+  // avgZ /= landmarks.length;
+
+  // let xcenter = minx + (maxx - minx) / 2;
+  // let ycenter = miny + (maxy - miny) / 2;
+  // let zcenter = minz + (maxz - minz) / 2;
+
+  // mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, verts);
+  // xform.setAbsolutePosition(new BABYLON.Vector3(xcenter, ycenter, zcenter).scale(10));
+
+
+	
  if(ikController != undefined && ikPole != undefined )
   {
-    ikController.position = new BABYLON.Vector3(avgX/5.0,(avgY/5.0)+2,0);
-  ikPole.position = new BABYLON.Vector3((avgX/5.0)+1,(avgY/5.0)+2,0);
+   // ikController.position = new BABYLON.Vector3(avgX/5.0,(avgY/5.0)+2,0);
+ // ikPole.position = new BABYLON.Vector3((avgX/5.0)+1,(avgY/5.0)+2,0);
   }
+  // ikController.setAbsolutePosition( new BABYLON.Vector3(xcenter, ycenter, zcenter).scale(10));
+  // ikPole.setAbsolutePosition( new BABYLON.Vector3(xcenter *20, ycenter*10, zcenter*10));
+  // ikController.position = new BABYLON.Vector3(xcenter/10, ycenter, zcenter/10);
+  // ikPole.position = new BABYLON.Vector3((xcenter+2)/10, ycenter, zcenter/10);
+animRot += 0.1;
+  if(skeleton != undefined && ikController != undefined && ikPole != undefined)
+  {
+    var mat = skeleton.bones[10].getLocalMatrix();
+    
+
+    var values = skeleton.bones[10].getLocalMatrix().toArray();
+
+    // var vPb = new BABYLON.Vector3(values[12],values[13],values[14]);
+
+    // var vXb = new BABYLON.Vector3(values[0],values[1],values[2]);
+    // var vYb = new BABYLON.Vector3(values[4],values[5],values[6]);
+    // var vZb = new BABYLON.Vector3(values[8],values[9],values[10]);
+    for (var i = 0;i<16;i++)
+    {
+      values[i] = results.facialTransformationMatrixes[0].data[i];
+
+    }
+    var vP = new BABYLON.Vector3(results.facialTransformationMatrixes[0].data[12],results.facialTransformationMatrixes[0].data[13],results.facialTransformationMatrixes[0].data[14]);
+    var vX = new BABYLON.Vector3(results.facialTransformationMatrixes[0].data[0],results.facialTransformationMatrixes[0].data[1],results.facialTransformationMatrixes[0].data[2]);
+    var vY = new BABYLON.Vector3(results.facialTransformationMatrixes[0].data[4],results.facialTransformationMatrixes[0].data[5],results.facialTransformationMatrixes[0].data[6]);
+    var vZ = new BABYLON.Vector3(results.facialTransformationMatrixes[0].data[8],results.facialTransformationMatrixes[0].data[9],results.facialTransformationMatrixes[0].data[10]);
+
+    // axes00.update(vP, vX,vY,vZ); //all parameters are Vector3s
+
+   
+
+    // console.log(vX);
+    // console.log(vY);
+    // console.log(vZ);
+
+
+      values[0] = results.facialTransformationMatrixes[0].data[10];
+    values[1] = results.facialTransformationMatrixes[0].data[9];
+    values[2] = -results.facialTransformationMatrixes[0].data[8];
+
+    //  values[3] = results.facialTransformationMatrixes[0].data[11];
+
+    values[4] = results.facialTransformationMatrixes[0].data[6];
+    values[5] = results.facialTransformationMatrixes[0].data[5];
+    values[6] = -results.facialTransformationMatrixes[0].data[4];
+
+  //  values[7] = results.facialTransformationMatrixes[0].data[7];
+
+    values[8] = -results.facialTransformationMatrixes[0].data[2];
+    values[9] = -results.facialTransformationMatrixes[0].data[1];
+    values[10] = results.facialTransformationMatrixes[0].data[0];
+
+    //  values[11] = results.facialTransformationMatrixes[0].data[3];
+
+    // skeleton.bones[6].updateMatrix(new BABYLON.Matrix.FromArray(values));
+
+    var rot = BABYLON.Vector3.RotationFromAxis(vX, vY, vZ);
+    // console.log(rot);
+    // let rayToCam =  skeleton.bones[10].getTransformNode().position.substract(camera.position);
+    // console.log("cam position : ",camera.position);
+    // console.log("bone position : ",skeleton.bones[10].getTransformNode().position);
+    
+    let testPos = new BABYLON.Vector3(values[12] *20.0, 350, values[14]+20);
+
+    let rayToCam = new BABYLON.Vector3(testPos.x,testPos.y, testPos.z - 45.0);
+
+    // console.log(rayToCam);
+    rayToCam.normalize();
+let rVal = (Math.asin(rayToCam.x))/2.0;
+    console.log(rVal);
+    var rotInv = new BABYLON.Vector3(-rot.z,rVal,-rot.x);
+
+    let nRot = 5;
+    if ( !avgRotInit)
+    {
+      avgRotX = Array(nRot).fill(rotInv.x);
+      avgRotY = Array(nRot).fill(rotInv.y);
+      avgRotZ = Array(nRot).fill(rotInv.z);
+      skeleton.bones[10].getTransformNode().rotation = rotInv;
+      avgRotInit = true;
+    }else{
+      avgRotX[nAvgRot] = rotInv.x;
+      avgRotY[nAvgRot] = rotInv.y;
+      avgRotZ[nAvgRot] = rotInv.z;
+      let rotX = 0.0;
+      let rotY = 0.0;
+      let rotZ = 0.0;
+      for (let i = 0;i<nRot;i++)
+      {
+        rotX += avgRotX[i] / nRot;
+        rotY += avgRotY[i] / nRot;
+        rotZ += avgRotZ[i] / nRot;
+      }
+      skeleton.bones[10].getTransformNode().rotation = new BABYLON.Vector3(rotX,rotY,rotZ);
+      nAvgRot += 1;
+      if (nAvgRot >= nRot){nAvgRot = 0;}
+    }
+    // skeleton.bones[10].getTransformNode().rotation = rotInv;
+
+    // console.log(vXb);
+    // console.log(vYb);
+    // console.log(vZb);
+
+    // values = skeleton.bones[6].getWorldMatrix().toArray();
+
+    var vPb = new BABYLON.Vector3(values[12],values[13],values[14]);
+
+    var vXb = new BABYLON.Vector3(values[0],values[1],values[2]);
+    var vYb = new BABYLON.Vector3(values[4],values[5],values[6]);
+    var vZb = new BABYLON.Vector3(values[8],values[9],values[10]);
+    // axes01.update(vPb, vXb,vYb,vZb);//all parameters are Vector3s
+
+    // ikController.position = new BABYLON.Vector3(-vPb.x *20.0,vPb.y*30.0+200,vPb.z+20);
+    // ikPole.position = new BABYLON.Vector3(-vPb.x*20.0+1000.0,vPb.y*30.0+200,vPb.z+20);
+    let curPos = new BABYLON.Vector3(-vPb.x *20.0, 350, vPb.z+20);
+    // let l = 3;
+    // if(!avgPosInit)
+    // {
+    //   let v3Tf = new BABYLON.Vector3(-vPb.x *20.0, 350, vPb.z+20);
+    //   avgPos = Array(30).fill(v3Tf);
+    //   curPos = new BABYLON.Vector3(-vPb.x *20.0, 350, vPb.z+20);
+    //   avgPosInit = true;
+    // }else{
+    //   avgPos[idAvg] = new BABYLON.Vector3(-vPb.x *20.0, 350, vPb.z+20);
+    //   curPos = new BABYLON.Vector3(0.0,0.0,0.0);
+    //   for ( let i = 0;i<30;i++){
+    //     curPos.x +=  avgPos[i].x / 30.0;
+    //     curPos.y +=  avgPos[i].y / 30.0;
+    //     curPos.z +=  avgPos[i].z / 30.0;
+    //   }
+    //   idAvg += 1;
+    //   if(idAvg >= 30 ){idAvg = 0;}
+    // }
+    // if(!avgPosInit){
+    ikController.position = curPos;
+    ikPole.position = new BABYLON.Vector3(curPos.x+1000.0, curPos.y, curPos.z);
+  //   avgPosInit = true;
+  // }
+    
+
+    // ikController.position = new BABYLON.Vector3(-vPb.x *20.0, 350, vPb.z+20);
+    // ikPole.position = new BABYLON.Vector3(-vPb.x*20.0+1000.0, 350, vPb.z+20);
+    // console.log(vPb);
+    bim.position = vPb;
+
+    valPos0 += 0.005;
+    valPos1 += 0.005;
+    valPos0 = valPos0 % 1.0;
+    valPos1 = valPos1 % 2.0;
+     let valLerp0 = (Math.cos(valPos0*Math.PI*2.0));
+     let valLerp1 = (Math.cos(valPos1*Math.PI));
+    // let valLerp = (valPos-0.5)*2.0;
+    wormMesh.position = new BABYLON.Vector3(startPos.x +(50*valLerp0),startPos.y+(50*valLerp1),startPos.z+vPb.z);
+
+    ikCtl.update();
+    // ikController.position =  new BABYLON.Vector3(-vPb.x ,vPb.y+15,-vPb.z+1);
+    // ikPole.position = new BABYLON.Vector3(-vPb.x+1.0,vPb.y+15,-vPb.z+1);
+
+    // values[0] = results.facialTransformationMatrixes[0].data[8];
+    // values[1] = results.facialTransformationMatrixes[0].data[9];
+    // values[2] = results.facialTransformationMatrixes[0].data[10];
+    // // values[3] = results.facialTransformationMatrixes[0].data[7];
+
+    // values[4] = results.facialTransformationMatrixes[0].data[4];
+    // values[5] = results.facialTransformationMatrixes[0].data[5];
+    // values[6] = results.facialTransformationMatrixes[0].data[6];
+    // // values[7] = results.facialTransformationMatrixes[0].data[11];
+
+    // values[8] = results.facialTransformationMatrixes[0].data[0];
+    // values[9] = results.facialTransformationMatrixes[0].data[1];
+    // values[10] = results.facialTransformationMatrixes[0].data[2];
+    // // values[11] = results.facialTransformationMatrixes[0].data[3];
+
+     
+    // let matrix = new BABYLON.Matrix.FromArray(results.facialTransformationMatrixes[0].data);
+    // console.log(matrix.toArray());
+    // faceGroup.matrixAutoUpdate = false
+    // faceGroup.matrix.copy(faceMatrix)
+   // skeleton.bones[6].updateMatrix(matrix);
+// console.log(results.facialTransformationMatrixes[0]);
+
+    //console.log(v3);
+   // mat = mat.multiply(BABYLON.Matrix.RotationX((v3.x/3.14)*180.0));
+    //skeleton.bones[6].updateMatrix(mat);
+  }
+  //skeleton.bones[5].RotationFromAxis(0.0,0.0,animRot);
+
   // ikController.setAbsolutePosition( new BABYLON.Vector3(xcenter, ycenter, zcenter).scale(10));
   // ikPole.setAbsolutePosition( new BABYLON.Vector3(xcenter *20, ycenter*10, zcenter*10));
   // ikController.position = new BABYLON.Vector3(xcenter/10, ycenter, zcenter/10);
@@ -586,29 +844,36 @@ engine.runRenderLoop(function(){
     sceneToRender.render();
 });
 
- 
+let  ikCtl;
 let controlMeshes; // for drag assignments
 function addIK(scene) {
-	ikPole = BABYLON.MeshBuilder.CreateSphere('', {diameter: 0.05}, scene);
-	ikPole.position = new BABYLON.Vector3(1 , 1, 0);
-	ikPole.parent = wormMesh;
+	ikPole = BABYLON.MeshBuilder.CreateSphere('', {diameter: 10.05}, scene);
+	ikPole.position = new BABYLON.Vector3(100, 1, 0);
+	// ikPole.parent = wormMesh;
   ikPole.addBehavior(new BABYLON.PointerDragBehavior());
-
-	ikController = BABYLON.MeshBuilder.CreateBox('', { size: 0.1 }, scene);
-	ikController.position = new BABYLON.Vector3(0, 1, 0);
-	ikController.parent = wormMesh;
-  ikController.addBehavior(new BABYLON.PointerDragBehavior());
-
   ikPole.isVisible = false;
+	ikController = BABYLON.MeshBuilder.CreateBox('', { size: 10.1 }, scene);
+	ikController.position = new BABYLON.Vector3(0, 1, 0);
+	// ikController.parent = wormMesh;
+  ikController.addBehavior(new BABYLON.PointerDragBehavior());
   ikController.isVisible = false;
+  // var bim = BABYLON.MeshBuilder.CreateBox('', { size: 0.1 }, scene);
+	// bim.position = new BABYLON.Vector3(0, 1, 0);
+	// bim.parent = wormMesh;
+  // bim.addBehavior(new BABYLON.PointerDragBehavior());
+
+
+  // ikPole.isVisible = false;
+  // ikController.isVisible = false;
     controlMeshes = [ikController, ikPole];  
 
-    const ikBone_R = skeleton.bones[4];
+    const ikBone_R = skeleton.bones[8];
 
-	const ikCtl = new BABYLON.BoneIKController(wormMesh, ikBone_R, {targetMesh: ikController, poleTargetMesh:ikPole, poleAngle: Math.PI/ 2});
+	// const 
+  ikCtl = new BABYLON.BoneIKController(wormMesh, ikBone_R, {targetMesh: ikController, poleTargetMesh:ikPole, poleAngle: Math.PI/ 2});
 
     scene.registerBeforeRender( () => {
-        ikCtl.update();
+        // ikCtl.update();
         // skeleton.bones[6].RotationFromAxis(0.0,0.0,90.0);
     });
 }
