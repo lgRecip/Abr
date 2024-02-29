@@ -1,20 +1,30 @@
-// let modAssetPath = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
-// let wasmPath = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm";
-// import "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+ let modAssetPath = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+ let wasmPath = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm";
+  import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+  const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
+ import "https://cdn.babylonjs.com/babylon.js";
+ import "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+ import "https://cdn.babylonjs.com/loaders/babylonjs.loaders.js";
+ let backgroundTexturePath = "https://raw.githubusercontent.com/lgRecip/Abr/main/faceTrackingAssets/textures/fond.png";
+ let environmentHDRIPath = "https://raw.githubusercontent.com/lgRecip/Abr/main/faceTrackingAssets/textures/environment.env";
+let Model3dPath = "https://raw.githubusercontent.com/lgRecip/Abr/main/faceTrackingAssets/3dModels/";
 
-let modAssetPath = "./faceTrackingAssets/face_landmarker.task";
-let wasmPath =  "./node_modules/@mediapipe/tasks-vision/wasm";
 
-import vision from "./js/tasks-vision@0.10.3.js";
-const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
 
-import "./node_modules/babylonjs/babylon.js";
-import "./node_modules/babylonjs-loaders/babylonjs.loaders.js";
-import "./node_modules/@mediapipe/camera_utils/camera_utils.js";
+//let modAssetPath = "./faceTrackingAssets/face_landmarker.task";
+//let wasmPath =  "./node_modules/@mediapipe/tasks-vision/wasm";
+//import vision from "./js/tasks-vision@0.10.3.js";
+//const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
+//import "./node_modules/babylonjs/babylon.js";
+//import "./node_modules/babylonjs-loaders/babylonjs.loaders.js";
+//import "./node_modules/@mediapipe/camera_utils/camera_utils.js";
 
-let backgroundTexturePath = "./faceTrackingAssets/textures/fond.png";
-let environmentHDRIPath = "./faceTrackingAssets/textures/environment.env";
+//let backgroundTexturePath = "./faceTrackingAssets/textures/fond.png";
+//let environmentHDRIPath = "./faceTrackingAssets/textures/environment.env";
+//let Model3dPath = "faceTrackingAssets/3dModels/";
+
 let faceTrackingRenderCanvasID = "faceTrackingRenderCanvas";
+
 
 let faceTrackingReady = false;
 let faceTrackingPaused = false;
@@ -161,7 +171,7 @@ const loadSceneContent = async function(faceLandmarker) {
   let normalsStd;
   let normalsIdl;
   let normalsCur;
-  BABYLON.SceneLoader.ImportMesh("","faceTrackingAssets/3dModels/","abyssWorm.glb", scene, function(newMeshes,particleSystems, skeletons){
+  BABYLON.SceneLoader.ImportMesh("",Model3dPath ,"abyssWorm.glb", scene, function(newMeshes,particleSystems, skeletons){
   wormMesh = newMeshes[1];
   normalsStd = newMeshes[1].getNormalsData();
   normalsCur = newMeshes[1].getNormalsData();
@@ -177,7 +187,7 @@ const loadSceneContent = async function(faceLandmarker) {
   wormMesh.useVertexColor = false;
   wormMesh.material = nodeMaterial;
  
-  BABYLON.SceneLoader.ImportMesh("","faceTrackingAssets/3dModels/","abyssWorm_idle.glb", scene, function(newMeshesT,particleSystems, skeletons){
+  BABYLON.SceneLoader.ImportMesh("",Model3dPath,"abyssWorm_idle.glb", scene, function(newMeshesT,particleSystems, skeletons){
   normalsIdl = newMeshesT[1].getVerticesData(BABYLON.VertexBuffer.NormalKind);
   newMeshesT[1].isVisible = false;
   
