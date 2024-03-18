@@ -10,7 +10,7 @@
 let Model3dPath = "https://raw.githubusercontent.com/lgRecip/Abr/main/faceTrackingAssets/3dModels/";
 
 
-
+//test
 //let modAssetPath = "./faceTrackingAssets/face_landmarker.task";
 //let wasmPath =  "./node_modules/@mediapipe/tasks-vision/wasm";
 //import vision from "./js/tasks-vision@0.10.3.js";
